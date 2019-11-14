@@ -1,17 +1,25 @@
-% Classic laminate theory - Orthotropic material
-% This script calculates the mechanical properties for a laminate of
-% orthotropic plies
+% CLASSICAL LAMINATE THEORY
+% Function to calculate classical laminate theory for orthotropic
+% constitutive plies
 
-% Load mechanical properties data structure
-PlyProperties
+% --Inputs:
+% PlyProperties = [E1, E2, mu12, G12, th]
+% LSS = [theta1, theta2, theta3... thetaN] (In degrees, with N even)
 
-E1   = ply.E1*10^9;
-E2   = ply.E2*10^9;
-mu12 = ply.mu12;
-G12  = ply.G12*10^9;
-th   = ply.thickness*10^-3;
+% --Outputs:
+% A matrix
+% B matrix
+% D matrix
+% Loads = [Nx, Ny, Nxy, Mx, My, Mxy]
+% Deformations = [ep_x, ep_y, gam_xy, kap_x, kap_y, kap_xy]
 
-mu21 = mu12*(E2/E1);
+function [A, B, D, Loads, Deformations] = CLT(PlyProperties, LSS)
+
+E1   = PlyProperties(1)*10^9;
+E2   = PlyProperties(2)*10^9;
+mu12 = PlyProperties(3);
+G12  = PlyProperties(4)*10^9;
+th   = PlyProperties(5)*10^-3;
 
 % Assembly flexibility matrix
 S = [ 1/E1    , -mu12/E1, 0    ;
@@ -36,8 +44,8 @@ for i = 1 : length(theta)
     G12vector (i) = (1/Sbar(3,3))*10^-9;
 end
 
-figure(1)
 % Variation of ply properties with theta
+figure(1)
 plot(theta, E1vector)
 hold on
 plot(theta, E2vector)
@@ -45,17 +53,14 @@ plot(theta, G12vector)
 legend ('E_1', 'E_2', 'G_12', 'Location', 'north')
 xlabel ('\theta (°)')
 ylabel ('GPa')
+title ('Variation of ply properties with \theta')
 
 figure(2)
 plot(theta, mu12vector)
 legend ('\mu_{12}')
 xlabel ('\theta (°)')
+title ('Variation of ply properties with \theta')
 
-% T = TMatrix(theta);
-% Sbar = T'*S*T;
-
-% Laminate stacking sequence
-LSS = [-45, 45, 0, 90, 45, -45, 0, 0, 90, 90]; % EVEN NUMBER!
 nPlies = length(LSS);
 
 % Rotate laminae properties
@@ -87,15 +92,14 @@ for i = 1 : nPlies/2
     z(1, nPlies/2 + i) = zN - (nPlies/2 - i)*th;
 end
 
+% Assembly z vector
 z = cat(2, z0, z);
 
 A = zeros(3, 3);
 B = zeros(3, 3);
 D = zeros(3, 3);
+
 % Calculate A, B, D matrices
-
-
-
 for i = 1 : nPlies
     A = A + QbarVector(:, :, i).*(z(i + 1)    - z(i)   );
     B = B + QbarVector(:, :, i).*(z(i + 1).^2 - z(i).^2);
@@ -105,3 +109,6 @@ end
 
 B = 0.5*B;
 D = (1/3)*D;
+
+Loads = [0, 0, 0, 0, 0, 0];
+Deformations = [0, 0, 0, 0, 0, 0];
