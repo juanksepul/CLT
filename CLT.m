@@ -13,7 +13,7 @@
 % Loads = [Nx, Ny, Nxy, Mx, My, Mxy]
 % Deformations = [ep_x, ep_y, gam_xy, kap_x, kap_y, kap_xy]
 
-function [A, B, D, Loads, Deformations] = CLT(PlyProperties, LSS)
+function [A, B, D, Loads, Deformations] = CLT(PlyProperties, LSS, Loads, Deformations)
 
 E1   = PlyProperties(1)*10^9;
 E2   = PlyProperties(2)*10^9;
@@ -101,14 +101,24 @@ D = zeros(3, 3);
 
 % Calculate A, B, D matrices
 for i = 1 : nPlies
-    A = A + QbarVector(:, :, i).*(z(i + 1)    - z(i)   );
-    B = B + QbarVector(:, :, i).*(z(i + 1).^2 - z(i).^2);
-    D = D + QbarVector(:, :, i).*(z(i + 1).^3 - z(i).^3);
+    A = A + QbarVector(:, :, i)*(z(i + 1)   - z(i)  );
+    B = B + QbarVector(:, :, i)*(z(i + 1)^2 - z(i)^2);
+    D = D + QbarVector(:, :, i)*(z(i + 1)^3 - z(i)^3);
 end
-
 
 B = 0.5*B;
 D = (1/3)*D;
 
-Loads = [0, 0, 0, 0, 0, 0];
-Deformations = [0, 0, 0, 0, 0, 0];
+% Load response calculation
+if (Loads == zeros(1, 6))
+    loads   = A*(Deformations([1 2 3]))' + B*(Deformations([4 5 6]))';
+    moments = B*(Deformations([1 2 3]))' + D*(Deformations([4 5 6]))';
+    Loads = [loads', moments'];
+elseif (Deformations == zeros(1, 6))
+    ABD = [A,B;B,D];
+    Deformations = ABD\Loads';
+else
+    Loads = zeros(1, 6);
+    Deformations = zeros(1, 6);
+end
+    
